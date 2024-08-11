@@ -1,4 +1,7 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:radio/resources/Colores.dart';
 
 void main() {
@@ -32,10 +35,30 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  bool playRadio = true;
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  bool playRadio = false;
   bool muteRadio = false;
   String actualTime = "00:00";
   String totalTime = "00:00";
+  String urlRadio = 'http://stream.zeno.fm/fd9bandxezzuv';
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  updateButtons() {
+    setState(() {
+      playRadio = !playRadio;
+      log("playRadio: $playRadio");
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,11 +76,11 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget play() {
+  Widget playOrPause() {
     return IconButton(
       constraints: const BoxConstraints(),
       padding: const EdgeInsets.all(2),
-      onPressed: () => setState(() => playRadio = !playRadio),
+      onPressed: () => encenderRadio(),
       icon: AnimatedSwitcher(
         duration: const Duration(milliseconds: 100),
         transitionBuilder: (child, animation) =>
@@ -65,7 +88,6 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Icon(
           playRadio ? Icons.pause : Icons.play_arrow,
           color: tertiary,
-          size: 22.0,
           key: ValueKey<bool>(playRadio),
         ),
       ),
@@ -85,7 +107,7 @@ class _MyHomePageState extends State<MyHomePage> {
             blurRadius: 10.0,
           ),
           Shadow(
-            color: Colors.white, // Sombra adicional para mayor impacto
+            color: Colors.white,
             blurRadius: 12.0,
           ),
         ],
@@ -94,8 +116,8 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   lineTime() {
-    double currentSliderValue = 20.0;
-    double totalDuration = 100.0;
+    double actual = 0.0;
+    double total = 100.0;
     return SliderTheme(
       data: SliderTheme.of(context).copyWith(
         overlayShape: SliderComponentShape.noOverlay,
@@ -103,12 +125,12 @@ class _MyHomePageState extends State<MyHomePage> {
         trackHeight: 3.0,
       ),
       child: Slider(
-          value: currentSliderValue,
+          value: actual,
           min: 0.0,
-          max: totalDuration,
+          max: total,
           onChanged: (value) {
             setState(() {
-              currentSliderValue = value;
+              total = value;
             });
           },
           activeColor: Colors.white,
@@ -120,11 +142,10 @@ class _MyHomePageState extends State<MyHomePage> {
     return IconButton(
         constraints: const BoxConstraints(),
         padding: const EdgeInsets.all(2),
-        onPressed: () => setState(() => muteRadio = !muteRadio),
+        onPressed: () => _setVolume(),
         icon: Icon(
           muteRadio ? Icons.volume_off : Icons.volume_up,
           color: tertiary,
-          size: 22.0,
         ));
   }
 
@@ -144,12 +165,12 @@ class _MyHomePageState extends State<MyHomePage> {
       height: 60,
       width: double.infinity,
       decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(50.0), color: colorExtra),
+          borderRadius: BorderRadius.circular(50.0), color: primary),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          play(),
+          playOrPause(),
           time(actualTime, totalTime),
           lineTime(),
           soundOrMute(),
@@ -166,11 +187,12 @@ class _MyHomePageState extends State<MyHomePage> {
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          imageLink('img/playstore.png', ''),
-          imageLink('img/insta.png', ''),
-          imageLink('img/what.png', ''),
-          imageLink('img/feis.png', ''),
-          imageLink('img/compa.png', ''),
+          imageLink('assets/img/playstore.png', ''),
+          imageLink('assets/img/insta.png', ''),
+          imageLink('assets/img/what.png', ''),
+          imageLink('assets/img/feis.png', ''),
+          imageLink('assets/img/compa.png',
+              ''), //En chrome no te pide toda la ruta solo desde la carpeta /img
         ],
       ),
     );
@@ -189,11 +211,36 @@ class _MyHomePageState extends State<MyHomePage> {
 
   title() {
     return Container(
-      padding: const EdgeInsets.all(30),
+      padding: const EdgeInsets.all(50),
       child: const Text(
         "Filadelfia Radio",
         style: TextStyle(fontFamily: 'Sriracha', fontSize: 35),
       ),
     );
+  }
+
+  void _setVolume() {
+    updateStateMute();
+    if (muteRadio) {
+      _audioPlayer.setVolume(0.0);
+    } else {
+      _audioPlayer.setVolume(1.0);
+    }
+  }
+
+  void encenderRadio() async {
+    updateButtons();
+    if (!playRadio) {
+      await _audioPlayer.stop();
+    } else {
+      await _audioPlayer.setUrl(urlRadio);
+      await _audioPlayer.play();
+    }
+  }
+
+  void updateStateMute() {
+    setState(() {
+      muteRadio = !muteRadio;
+    });
   }
 }
