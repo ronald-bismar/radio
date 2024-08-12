@@ -3,6 +3,9 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:radio/resources/Colores.dart';
+import 'package:radio/widgets/animations_sound.dart';
+import 'package:radio/widgets/bar_progress_indicator.dart';
+import 'package:radio/widgets/frosted_glass_box.dart';
 
 void main() {
   runApp(const MyApp());
@@ -42,9 +45,16 @@ class _MyHomePageState extends State<MyHomePage> {
   String totalTime = "00:00";
   String urlRadio = 'http://stream.zeno.fm/fd9bandxezzuv';
 
+  // Colores para Neumorfismo
+  final Color baseColor = const Color.fromARGB(255, 236, 236, 236);
+  final Color shadowLight = Colors.white;
+  final Color shadowDark = const Color(0xFFA3B1C6);
+  double opacityLevel = 0.0;
+
   @override
   void initState() {
     super.initState();
+    opacityLevel = playRadio ? 0.0 : 1.0;
   }
 
   @override
@@ -57,21 +67,26 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       playRadio = !playRadio;
       log("playRadio: $playRadio");
+      opacityLevel = playRadio ? 0.0 : 1.0;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: <Widget>[
-          Align(
-            alignment: Alignment.topCenter,
-            child: title(),
-          ),
-          Align(alignment: Alignment.center, child: reproductor()),
-          Align(alignment: Alignment.bottomCenter, child: parteBaja())
-        ],
+      backgroundColor: baseColor,
+      body: SizedBox(
+        height: double.infinity,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: <Widget>[
+            Align(
+                alignment: Alignment.bottomCenter,
+                child: botonGrandeYAnimacion()),
+            reproductor(),
+            Align(alignment: Alignment.bottomCenter, child: parteBaja())
+          ],
+        ),
       ),
     );
   }
@@ -116,26 +131,13 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   lineTime() {
-    double actual = 0.0;
-    double total = 100.0;
-    return SliderTheme(
-      data: SliderTheme.of(context).copyWith(
-        overlayShape: SliderComponentShape.noOverlay,
-        thumbShape: SliderComponentShape.noThumb,
-        trackHeight: 3.0,
+    return Expanded(
+        child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: CustomLinearProgressIndicator(
+        playRadio: !playRadio,
       ),
-      child: Slider(
-          value: actual,
-          min: 0.0,
-          max: total,
-          onChanged: (value) {
-            setState(() {
-              total = value;
-            });
-          },
-          activeColor: Colors.white,
-          inactiveColor: tertiary),
-    );
+    ));
   }
 
   soundOrMute() {
@@ -159,13 +161,29 @@ class _MyHomePageState extends State<MyHomePage> {
 
   reproductor() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 10),
+      margin: const EdgeInsets.symmetric(
+        horizontal: 10,
+      ),
       padding: const EdgeInsets.symmetric(horizontal: 10),
       alignment: Alignment.center,
       height: 60,
       width: double.infinity,
       decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(50.0), color: primary),
+        color: primary,
+        borderRadius: BorderRadius.circular(50.0),
+        boxShadow: [
+          BoxShadow(
+            color: shadowDark,
+            offset: const Offset(5, 5),
+            blurRadius: 15,
+          ),
+          BoxShadow(
+            color: shadowLight,
+            offset: const Offset(-5, -5),
+            blurRadius: 15,
+          ),
+        ],
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -182,7 +200,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   parteBaja() {
     return Container(
-      padding: const EdgeInsets.all(30),
+      padding: const EdgeInsets.all(20),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -191,8 +209,7 @@ class _MyHomePageState extends State<MyHomePage> {
           imageLink('assets/img/insta.png', ''),
           imageLink('assets/img/what.png', ''),
           imageLink('assets/img/feis.png', ''),
-          imageLink('assets/img/compa.png',
-              ''), //En chrome no te pide toda la ruta solo desde la carpeta /img
+          imageLink('assets/img/compa.png', ''),
         ],
       ),
     );
@@ -211,10 +228,13 @@ class _MyHomePageState extends State<MyHomePage> {
 
   title() {
     return Container(
-      padding: const EdgeInsets.all(50),
+      padding: const EdgeInsets.only(
+        top: 60,
+      ),
       child: const Text(
         "Filadelfia Radio",
-        style: TextStyle(fontFamily: 'Sriracha', fontSize: 35),
+        style: TextStyle(
+            fontFamily: 'Sriracha', fontSize: 40, color: Colors.white),
       ),
     );
   }
@@ -242,5 +262,104 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       muteRadio = !muteRadio;
     });
+  }
+
+  botonGrandeYAnimacion() {
+    return Container(
+      margin: const EdgeInsets.only(top: 60, left: 20, right: 20),
+      decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(40),
+          color: Colors.transparent,
+          border: Border.all(color: const Color.fromARGB(221, 196, 196, 196))),
+      child: Stack(
+        fit: StackFit.loose,
+        alignment: Alignment.center,
+        children: <Widget>[
+          ClipRRect(
+            borderRadius: BorderRadius.circular(40),
+            child: Image.asset('assets/img/portada.jpg',
+                fit: BoxFit.cover), //Imagen de fondo de la seccion
+          ),
+          Positioned.fill(
+            child: AnimatedOpacity(
+              opacity: opacityLevel,
+              duration: const Duration(milliseconds: 300),
+              child: const FrostedGlassBox(
+                theWidth: double.infinity,
+                theHeight: double.infinity,
+              ),
+            ),
+          ),
+          contenidoImagen(),
+        ],
+      ),
+    );
+  }
+
+  contenidoImagen() {
+    return Positioned.fill(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          title(),
+          botonGrande(),
+          animacion(),
+        ],
+      ),
+    );
+  }
+
+  botonGrande() {
+    return Container(
+      height: 150,
+      width: 150,
+      margin: const EdgeInsets.all(20),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(255, 3, 54, 136),
+        borderRadius: BorderRadius.circular(100),
+        boxShadow: [
+          BoxShadow(
+            color: shadowDark,
+            offset: const Offset(10, 10),
+            blurRadius: 30,
+          ),
+          BoxShadow(
+            color: shadowDark,
+            offset: const Offset(-10, -10),
+            blurRadius: 30,
+          ),
+        ],
+      ),
+      child: IconButton(
+        onPressed: () => encenderRadio(),
+        icon: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          transitionBuilder: (child, animation) =>
+              ScaleTransition(scale: animation, child: child),
+          child: Icon(
+            playRadio ? Icons.pause_rounded : Icons.play_arrow_rounded,
+            color: Colors.white,
+            size: 120,
+            key: ValueKey<bool>(playRadio),
+          ),
+        ),
+      ),
+    );
+  }
+
+  animacion() {
+    log("playRadio: $playRadio");
+    return Transform.scale(
+      scale: 0.3,
+      child: Container(
+        padding: const EdgeInsets.only(bottom: 50),
+        height: 100,
+        child: MusicVisualizer(
+          playRadio: playRadio,
+        ),
+      ),
+    );
   }
 }
