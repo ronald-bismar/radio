@@ -1,37 +1,67 @@
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:radio/resources/Colores.dart';
+import 'package:radio/resources/colores.dart';
 import 'package:radio/widgets/animations_sound.dart';
 import 'package:radio/widgets/bar_progress_indicator.dart';
 import 'package:radio/widgets/frosted_glass_box.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  bool _isDarkMode = false;
+
+  void _toggleTheme() {
+    setState(() {
+      _isDarkMode = !_isDarkMode;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Radio Filadelfia',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+      theme: _isDarkMode
+          ? ThemeData.dark().copyWith(
+              colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+              useMaterial3: true,
+            )
+          : ThemeData(
+              colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+              useMaterial3: true,
+            ),
+      home: MyHomePage(
+        title: 'Filadelfia Radio',
+        onThemeToggle: _toggleTheme,
+        isDark: _isDarkMode,
       ),
-      home: const MyHomePage(title: 'Filadelfia Radio'),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+  const MyHomePage(
+      {super.key,
+      required this.title,
+      required this.onThemeToggle,
+      required this.isDark});
 
   final String title;
+  final VoidCallback onThemeToggle;
+  final bool isDark;
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -44,21 +74,41 @@ class _MyHomePageState extends State<MyHomePage> {
   String actualTime = "00:00";
   String totalTime = "00:00";
   String urlRadio = 'http://stream.zeno.fm/fd9bandxezzuv';
+  Duration _elapsedTime = Duration.zero;
+  Timer? _timer;
 
-  // Colores para Neumorfismo
-  final Color baseColor = const Color.fromARGB(255, 236, 236, 236);
-  final Color shadowLight = Colors.white;
-  final Color shadowDark = const Color(0xFFA3B1C6);
+  // Colores segun el tema oscuro o claro
+  Color baseColor = baseColorPrimary;
+  Color shadowLight = shadowLightPrimary;
+  Color shadowDark = shadowDarkPrimary;
+  Color colorReproductor = shadowDarkPrimary;
+
   double opacityLevel = 0.0;
 
   @override
   void initState() {
     super.initState();
     opacityLevel = playRadio ? 0.0 : 1.0;
+    setColors();
+  }
+
+  void setColors() {
+    if (widget.isDark) {
+      baseColor = colorExtra;
+      shadowLight = colorExtra;
+      shadowDark = Colors.black;
+      colorReproductor = const Color.fromARGB(255, 93, 175, 226);
+    } else {
+      baseColor = baseColorPrimary;
+      shadowLight = shadowLightPrimary;
+      shadowDark = shadowDarkPrimary;
+      colorReproductor = primary;
+    }
   }
 
   @override
   void dispose() {
+    _timer?.cancel();
     _audioPlayer.dispose();
     super.dispose();
   }
@@ -66,8 +116,34 @@ class _MyHomePageState extends State<MyHomePage> {
   updateButtons() {
     setState(() {
       playRadio = !playRadio;
-      log("playRadio: $playRadio");
       opacityLevel = playRadio ? 0.0 : 1.0;
+      if (playRadio) {
+        _startTimer();
+      } else {
+        _stopTimer();
+      }
+    });
+  }
+
+  String formatDuration(Duration duration) {
+    return '${duration.inMinutes.toString().padLeft(2, '0')}:${(duration.inSeconds % 60).toString().padLeft(2, '0')}';
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (Timer timer) {
+      setState(() {
+        _elapsedTime += const Duration(seconds: 1);
+      });
+    });
+  }
+
+  void _stopTimer() {
+    _timer?.cancel();
+  }
+
+  void _resetTimer() {
+    setState(() {
+      _elapsedTime = Duration.zero;
     });
   }
 
@@ -109,9 +185,9 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  time(String actualTime, String totalTime) {
+  Widget time() {
     return Text(
-      "$actualTime/$totalTime",
+      "${formatDuration(_elapsedTime)}/00:00", // Total time remains "00:00"
       style: const TextStyle(
         fontWeight: FontWeight.w400,
         fontSize: 16,
@@ -152,11 +228,13 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   options() {
-    return const Icon(
-      Icons.more_vert,
-      color: Colors.black,
-      size: 22.0,
-    );
+    return IconButton(
+        onPressed: () => _showOptionsMenu(context),
+        icon: const Icon(
+          Icons.more_vert,
+          color: Colors.black,
+          size: 22.0,
+        ));
   }
 
   reproductor() {
@@ -169,7 +247,7 @@ class _MyHomePageState extends State<MyHomePage> {
       height: 60,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: primary,
+        color: colorReproductor,
         borderRadius: BorderRadius.circular(50.0),
         boxShadow: [
           BoxShadow(
@@ -187,13 +265,7 @@ class _MyHomePageState extends State<MyHomePage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          playOrPause(),
-          time(actualTime, totalTime),
-          lineTime(),
-          soundOrMute(),
-          options()
-        ],
+        children: [playOrPause(), time(), lineTime(), soundOrMute(), options()],
       ),
     );
   }
@@ -205,10 +277,14 @@ class _MyHomePageState extends State<MyHomePage> {
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          imageLink('assets/img/playstore.png', ''),
-          imageLink('assets/img/insta.png', ''),
-          imageLink('assets/img/what.png', ''),
-          imageLink('assets/img/feis.png', ''),
+          imageLink('assets/img/playstore.png',
+              'http://filadelfiaradio.rf.gd/?fbclid=IwY2xjawEiCShleHRuA2FlbQIxMAABHQhIQ8QtNVBk6SPKK556nrLxU6AfiHvUcQMW7n5UmLEKNt3Jrrn3Zuqegw_aem_6GyHI6DlRXvP1GPaVz5S3w&i=1#'),
+          imageLink('assets/img/insta.png',
+              'http://filadelfiaradio.rf.gd/?fbclid=IwY2xjawEiCShleHRuA2FlbQIxMAABHQhIQ8QtNVBk6SPKK556nrLxU6AfiHvUcQMW7n5UmLEKNt3Jrrn3Zuqegw_aem_6GyHI6DlRXvP1GPaVz5S3w&i=1#'),
+          imageLink('assets/img/what.png',
+              'https://chat.whatsapp.com/CRxHUmHcDUmA1LNa6CBKHo'),
+          imageLink('assets/img/feis.png',
+              'https://www.facebook.com/CEFiladelfiaCentral/'),
           imageLink('assets/img/compa.png', ''),
         ],
       ),
@@ -217,7 +293,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   imageLink(String addressResource, String urlSocialMedia) {
     return GestureDetector(
-      onTap: () => {},
+      onTap: () async => await _launchURL(urlSocialMedia),
       child: Image.asset(
         addressResource,
         height: 40,
@@ -226,15 +302,34 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  Future<void> _launchURL(String url) async {
+    final Uri uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      log("Se llego hasta aqui si no se pudo entrar");
+      await launchUrl(uri);
+    } else {
+      throw 'No se pudo abrir la URL: $url';
+    }
+  }
+
   title() {
     return Container(
       padding: const EdgeInsets.only(
-        top: 60,
+        top: 40,
       ),
-      child: const Text(
-        "Filadelfia Radio",
-        style: TextStyle(
-            fontFamily: 'Sriracha', fontSize: 40, color: Colors.white),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          const Text(
+            "Filadelfia Radio",
+            style: TextStyle(
+                fontFamily: 'Sriracha', fontSize: 35, color: Colors.white),
+          ),
+          Image.asset(
+            'assets/img/logo.png',
+            height: 50,
+          )
+        ],
       ),
     );
   }
@@ -252,9 +347,11 @@ class _MyHomePageState extends State<MyHomePage> {
     updateButtons();
     if (!playRadio) {
       await _audioPlayer.stop();
+      _stopTimer();
     } else {
       await _audioPlayer.setUrl(urlRadio);
       await _audioPlayer.play();
+      _startTimer();
     }
   }
 
@@ -270,14 +367,14 @@ class _MyHomePageState extends State<MyHomePage> {
       decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(40),
           color: Colors.transparent,
-          border: Border.all(color: const Color.fromARGB(221, 196, 196, 196))),
+          border: Border.all(color: shadowDark)),
       child: Stack(
         fit: StackFit.loose,
         alignment: Alignment.center,
         children: <Widget>[
           ClipRRect(
             borderRadius: BorderRadius.circular(40),
-            child: Image.asset('assets/img/portada.jpg',
+            child: Image.asset('assets/img/portada.jpeg',
                 fit: BoxFit.cover), //Imagen de fondo de la seccion
           ),
           Positioned.fill(
@@ -360,6 +457,32 @@ class _MyHomePageState extends State<MyHomePage> {
           playRadio: playRadio,
         ),
       ),
+    );
+  }
+
+  void _showOptionsMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            ListTile(
+              leading: const Icon(Icons.brightness_4),
+              title: Text(widget.isDark ? 'Modo Claro' : 'Modo Oscuro'),
+              onTap: () {
+                // Cerrar el modal
+                Navigator.pop(context);
+                setState(() {
+                  setColors();
+                });
+                // Cambiar el tema
+                widget.onThemeToggle();
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }
