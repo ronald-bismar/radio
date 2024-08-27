@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 class CustomLinearProgressIndicator extends StatefulWidget {
-  final bool playRadio; // Asegúrate de especificar el tipo booleano
+  final bool playRadio;
+
   const CustomLinearProgressIndicator({super.key, required this.playRadio});
 
   @override
@@ -10,48 +11,16 @@ class CustomLinearProgressIndicator extends StatefulWidget {
 }
 
 class _CustomLinearProgressIndicatorState
-    extends State<CustomLinearProgressIndicator>
-    with SingleTickerProviderStateMixin {
-  late AnimationController animationController;
-
-  @override
-  void initState() {
-    super.initState();
-    animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 100),
-    );
-
-    // Iniciar la animación basada en el valor inicial de playRadio
-    if (widget.playRadio) {
-      animationController.forward();
-    } else {
-      animationController.value = 0.0;
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant CustomLinearProgressIndicator oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Actualizar animación si el valor de playRadio cambia
-    if (widget.playRadio && !oldWidget.playRadio) {
-      animationController.forward();
-    } else if (!widget.playRadio && oldWidget.playRadio) {
-      animationController.reverse();
-    }
-  }
-
-  @override
-  void dispose() {
-    animationController.dispose();
-    super.dispose();
-  }
-
+    extends State<CustomLinearProgressIndicator> {
   @override
   Widget build(BuildContext context) {
-    return LinearProgressIndicator(
-      color: Colors.blue,
-      value: animationController.value,
+    return Container(
+      margin: const EdgeInsets.only(left: 6),
+      child: LinearProgressIndicator(
+
+        color: Colors.blue, // null usa el color predeterminado
+        value: widget.playRadio ? 0 : 100,
+      ),
     );
   }
 }
