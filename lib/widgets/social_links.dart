@@ -25,11 +25,13 @@ class SocialLinks extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: links.map((link) => _buildSocialLink(link)).toList(),
+    return Align(
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: links.map((link) => _buildSocialLink(link)).toList(),
+        ),
       ),
     );
   }

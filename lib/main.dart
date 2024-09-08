@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:radio/screens/home_page.dart';
-import 'package:radio/providers/theme_provider.dart';
 import 'package:radio/providers/audio_provider.dart';
+import 'package:radio/providers/theme_provider.dart';
+import 'package:radio/screens/home_page.dart';
 
 void main() {
   runApp(

@@ -16,23 +16,25 @@ class HomePage extends StatelessWidget {
     final audioProvider = Provider.of<AudioProvider>(context);
 
     return Scaffold(
-        body: AnimatedGradientBackground(
-      isPaused: !audioProvider.isPlaying,
-      content: SafeArea(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: <Widget>[
-            Expanded(
-              child: RadioButton(
-                isPlaying: audioProvider.isPlaying,
-                onPressed: audioProvider.togglePlay,
+      body: AnimatedGradientBackground(
+        isPaused: !audioProvider.isPlaying,
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              SizedBox(
+                height: 600,
+                child: RadioButton(
+                  isPlaying: audioProvider.isPlaying,
+                  onPressed: audioProvider.togglePlay,
+                ),
               ),
-            ),
-            const PlayerControls(),
-            SocialLinks(),
-          ],
+              const PlayerControls(),
+              SocialLinks(),
+            ],
+          ),
         ),
       ),
-    ));
+    );
   }
 }

@@ -1,12 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@drawable/bg_color" />
 
-    <!-- You can insert your own image assets here -->
+    <!-- Logo en el centro de la pantalla -->
     <item>
         <bitmap
             android:gravity="center"
             android:src="@mipmap/logo" />
+    </item>
+
+    <item>
+         <text
+                    android:text="R.B.L.M"
+                    android:textColor="@android:color/white"
+                    android:textSize="18sp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"/>
+    </item>
+
+    <item>
+        <bitmap
+        android:gravity="bottom"
+        android:src="@mipmap/letras"/>
     </item>
 </layer-list>
