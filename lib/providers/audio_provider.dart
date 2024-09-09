@@ -11,7 +11,7 @@ class AudioProvider extends ChangeNotifier {
   bool _isMuted = false;
   Duration _elapsedTime = Duration.zero;
   Timer? _timer;
-  StreamSubscription<ConnectivityResult>? _connectivitySubscription;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
 
   bool get isPlaying => _isPlaying;
   bool get isMuted => _isMuted;
@@ -24,7 +24,7 @@ class AudioProvider extends ChangeNotifier {
     _monitorConnectivity();
   }
 
-  Future togglePlay() async {
+  Future<void> togglePlay() async {
     _isPlaying = !_isPlaying;
     notifyListeners();
     if (!_isPlaying) {
@@ -63,13 +63,17 @@ class AudioProvider extends ChangeNotifier {
 
   void _monitorConnectivity() {
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen(
-      (ConnectivityResult result) async {
-        if (result != ConnectivityResult.none && _isPlaying) {
-          try {
-            await _audioPlayer.play();
-          } catch (e) {
-            // Manejar el error de reconexión
-            log('Error al intentar reconectar: $e');
+      (List<ConnectivityResult> results) async {
+        if (results.contains(ConnectivityResult.mobile) ||
+            results.contains(ConnectivityResult.wifi) ||
+            results.contains(ConnectivityResult.ethernet)) {
+          if (_isPlaying) {
+            try {
+              await _audioPlayer.play();
+            } catch (e) {
+              // Manejar el error de reconexión
+              log('Error al intentar reconectar: $e');
+            }
           }
         }
       },
